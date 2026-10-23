@@ -55,6 +55,11 @@ storage/
 recordings/
 uploads/
 cache/
+*.wav
+*.mp3
+poc/*.png
+poc/*.wav
+
 
 # OS and Editor
 .DS_Store
