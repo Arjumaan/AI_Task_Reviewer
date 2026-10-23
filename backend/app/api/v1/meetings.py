@@ -3,7 +3,7 @@ Meeting Execution, Bot Orchestration, Transcripts, and Briefing Closeout.
 """
 from datetime import datetime, timezone
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -157,6 +157,52 @@ async def get_bot_status(current_user: User = Depends(get_current_user)):
         "has_transcription": has_transcription,
         "pid": active_bot_state.get("pid") if active_bot_state.get("process") else None
     }
+
+@router.post("/baas-webhook")
+async def meetingbaas_webhook(
+    request: Request,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Receives real-time asynchronous webhook updates from Meeting BaaS:
+    - bot.status_change (joining, in_waiting_room, in_call_recording, call_ended)
+    - complete (recording ready, full transcription available)
+    - error / failed
+    """
+    try:
+        payload = await request.json()
+    except Exception:
+        return {"status": "ignored", "reason": "invalid_json"}
+
+    event_type = payload.get("event") or payload.get("type") or "unknown"
+    data = payload.get("data") or payload
+    bot_id = data.get("bot_id") or payload.get("bot_id")
+
+    # Update active bot state in memory
+    if bot_id and (active_bot_state.get("bot_id") == bot_id or not active_bot_state.get("bot_id")):
+        raw_status = data.get("status")
+        status_code = raw_status.get("code") if isinstance(raw_status, dict) else raw_status
+        if status_code:
+            active_bot_state["status"] = status_code
+
+    # If meeting completed or transcript ready, auto-sync transcripts & recordings into DB
+    meeting_id = active_bot_state.get("meeting_id")
+    if bot_id and ("complete" in str(event_type) or "completed" in str(data.get("status", ""))):
+        if not meeting_id:
+            m_res = await db.execute(
+                select(MeetingAttempt).where(MeetingAttempt.bot_display_name.like(f"%{bot_id}%"))
+            )
+            attempt = m_res.scalars().first()
+            if attempt:
+                meeting_id = attempt.meeting_id
+
+        if meeting_id:
+            try:
+                await MeetingBaasService.sync_transcripts_to_db(meeting_id, bot_id, db)
+            except Exception as e:
+                pass
+
+    return {"status": "success", "event": event_type, "bot_id": bot_id}
 
 @router.post("/stop-bot")
 async def stop_meet_bot(

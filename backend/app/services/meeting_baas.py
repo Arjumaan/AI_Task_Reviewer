@@ -110,8 +110,9 @@ class MeetingBaasService:
                 "recording_mode": "speaker_view",
                 "speech_to_text": "gladia"
             }
-            if webhook_url:
-                payload["webhook_url"] = webhook_url
+        target_webhook = webhook_url or settings.MEETING_BAAS_WEBHOOK_URL
+        if target_webhook:
+            payload["webhook_url"] = target_webhook
 
         async with httpx.AsyncClient(timeout=25.0) as client:
             res = await client.post(url, json=payload, headers=headers)

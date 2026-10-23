@@ -53,6 +53,7 @@ class Settings(BaseSettings):
     MEETING_BAAS_API_KEY: str = "mb-iSMJYnSxRTyqMSXOzmimtcDoYtXewtDiEtkkwQYzNGIlJbJHGVlmjXuhiYfCT"
     MEETING_BAAS_BASE_URL: str = "https://api.meetingbaas.com/v2"
     MEETING_BAAS_SPEAKING_URL: str = "https://speaking.meetingbaas.com"
+    MEETING_BAAS_WEBHOOK_URL: Optional[str] = None
 
     # Cartesia Neural TTS Voice
     CARTESIA_API_KEY: Optional[str] = "sk_car_KEA1mG2f5pGHkUDEFRBpjF"
