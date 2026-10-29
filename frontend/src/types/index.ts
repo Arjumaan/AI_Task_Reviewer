@@ -15,6 +15,8 @@ export type TaskStatus =
   | 'BRIEFING_SCHEDULED'
   | 'BRIEFING_COMPLETED'
   | 'IN_PROGRESS'
+  | 'SUBMITTED'
+  | 'REVIEW_SCHEDULED'
   | 'UNDER_REVIEW'
   | 'REVISION_REQUIRED'
   | 'PASSED'
@@ -70,10 +72,13 @@ export interface TaskVersion {
 
 export interface TaskDocument {
   id: string;
-  original_filename: string;
-  file_type: string;
+  filename?: string;
+  original_filename?: string;
+  file_type?: string;
+  mime_type?: string;
   file_size_bytes: number;
-  has_detected_injection: boolean;
+  has_detected_injection?: boolean;
+  analysis_json?: string;
   created_at: string;
 }
 
@@ -109,6 +114,8 @@ export interface Meeting {
   created_at: string;
   transcripts?: TranscriptItem[];
   recordings?: RecordingItem[];
+  meeting_round?: number;
+  feedback_summary?: string;
 }
 
 export interface EvaluationResult {
@@ -175,6 +182,8 @@ export interface Task {
   status: TaskStatus;
   assigner_id: string;
   intern_id?: string;
+  assigner?: User;
+  intern?: User;
   current_version_id?: string;
   versions?: TaskVersion[];
   documents?: TaskDocument[];

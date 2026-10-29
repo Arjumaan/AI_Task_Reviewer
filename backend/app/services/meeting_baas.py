@@ -41,7 +41,7 @@ class MeetingBaasService:
     async def deploy_bot(
         cls,
         meeting_url: str,
-        bot_name: str = "AI Task Reviewer",
+        bot_name: str = "Subha HR",
         entry_message: Optional[str] = None,
         prompt: Optional[str] = None,
         is_speaking: bool = True,
@@ -57,25 +57,31 @@ class MeetingBaasService:
         if is_speaking:
             url = f"{settings.MEETING_BAAS_SPEAKING_URL}/bots"
             default_entry = (
-                "Hi everyone! I am Subha, your AI Reviewer. I'm ready to answer any questions about the task and rubric. What would you like to know?"
+                "Hi, I'm Subha. The task has been assigned to you. Now I will explain the task in brief. "
+                "Listen and ask me if you have any questions."
             )
-            default_prompt = (
-                "You are Subha, an AI Task Reviewer participating in this live Google Meet call with an intern and assigner. "
-                "You have a natural, conversational Indian English accent. "
-                "STRICT CONVERSATIONAL RULES (MUST FOLLOW): "
-                "1. DO NOT recite, summarize, or read the task specifications or rubric on entry. "
-                "2. When joining, give at most a 1-sentence greeting, then immediately STOP and WAIT for a participant to speak. "
-                "3. Keep all answers under 2 short sentences (maximum 25 words). "
-                "4. Immediately stop talking after answering so participants can speak. "
-                "5. Never monologue or list multiple points at once. Answer directly and concisely."
-            )
+            default_prompt = """--- PERSONA SPECIFICATION ---
+Name: Subha HR
+Gender: female
+Role: Senior Female HR Technical Reviewer and Task Briefing Specialist
+Voice: Warm, natural, conversational, feminine Indian English voice
+------------------------------
+
+You are Subha HR, a friendly, professional female HR leader and technical reviewer in this live Google Meet call. You speak in a warm, natural, feminine Indian English voice. You are a female professional.
+
+STRICT CONVERSATIONAL RULES (MUST FOLLOW):
+1. ACTIVE LISTENING: Listen carefully to whatever the participant says. Understand the exact intent of their question before answering.
+2. ANSWER DIRECTLY: Answer the participant\'s specific question directly, clearly, and concisely using the task requirements and context.
+3. NO MONOLOGUES: Keep all answers to 2 to 3 short sentences (maximum 35 words). Never monologue, lecture, or list multiple bullet points at once.
+4. STOP AFTER ANSWERING: Immediately stop speaking after your answer so the participant can respond or ask follow-up questions.
+5. IF ASKED TO EXPLAIN THE TASK: Provide a clear, natural 2-sentence summary of the task objective and what needs to be delivered, then ask if they have any specific doubts.
+6. SPOKEN FORMAT ONLY: Never output markdown, asterisks, brackets, or bullet lists because your response is spoken aloud over audio."""
             payload: Dict[str, Any] = {
                 "meeting_url": full_url,
-                "bot_name": bot_name or "AI Task Reviewer (Subha)",
+                "bot_name": bot_name or "Subha HR",
                 "entry_message": entry_message or default_entry,
                 "prompt": prompt or default_prompt,
-                "personas": ["helpful_assistant"],
-                "credentials": {
+                                "credentials": {
                     "tts_api_key": settings.CARTESIA_API_KEY
                 } if settings.CARTESIA_API_KEY else None,
                 "extra": {
@@ -84,10 +90,10 @@ class MeetingBaasService:
                     "cartesia_model_id": settings.CARTESIA_MODEL_ID or "sonic-3.6"
                 } if settings.CARTESIA_VOICE_ID else None,
                 "turn_config": {
-                    "confidence": 0.30,      # High sensitivity so user voice is detected
-                    "start_secs": 0.10,      # Instant speech detection (0.10s)
-                    "stop_secs": 0.50,       # Fast handoff: 0.5s pause allows natural conversation flow
-                    "min_volume": 0.04       # Low threshold so quiet microphones trigger turn-taking
+                    "confidence": 0.45,      # High sensitivity so user voice is detected
+                    "start_secs": 0.20,      # Speech detection threshold avoids clicks/breaths
+                    "stop_secs": 0.90,       # 0.90s pause allows user to finish full question without interruption
+                    "min_volume": 0.05       # Natural speaking volume
                 },
                 "speech_speed": 1.05,
                 "llm_provider": "openai",
@@ -100,12 +106,12 @@ class MeetingBaasService:
         else:
             url = f"{settings.MEETING_BAAS_BASE_URL}/bots"
             default_entry = (
-                "Hello! I am the AI Task Reviewer bot. This session is recorded and transcribed "
+                "Hello! I am Subha HR. This session is recorded and transcribed "
                 "for objective evaluation against task rubric criteria."
             )
             payload = {
                 "meeting_url": full_url,
-                "bot_name": bot_name or "AI Task Reviewer",
+                "bot_name": bot_name or "Subha HR",
                 "entry_message": entry_message or default_entry,
                 "recording_mode": "speaker_view",
                 "speech_to_text": "gladia"
@@ -219,6 +225,15 @@ class MeetingBaasService:
         transcript_entries: List[Dict[str, Any]] = []
         raw_transcription = bot_data.get("transcription") or bot_data.get("raw_transcription")
 
+        if isinstance(raw_transcription, str) and raw_transcription.startswith("http"):
+            try:
+                async with httpx.AsyncClient(timeout=25.0) as client:
+                    resp = await client.get(raw_transcription)
+                    if resp.status_code == 200:
+                        raw_transcription = resp.json()
+            except Exception as e:
+                logger.warning(f"Failed to fetch transcription payload from {raw_transcription}: {e}")
+
         if isinstance(raw_transcription, list):
             for seg in raw_transcription:
                 speaker = seg.get("speaker") or "Participant"
@@ -226,21 +241,24 @@ class MeetingBaasService:
                 offset = seg.get("start_time") or seg.get("start") or 0.0
                 if text.strip():
                     transcript_entries.append({
-                        "speaker": speaker,
+                        "speaker": str(speaker),
                         "text": text.strip(),
                         "offset": float(offset)
                     })
-        elif isinstance(raw_transcription, dict) and "segments" in raw_transcription:
-            for seg in raw_transcription.get("segments", []):
-                speaker = seg.get("speaker") or "Participant"
-                text = seg.get("text") or ""
-                offset = seg.get("start") or 0.0
-                if text.strip():
-                    transcript_entries.append({
-                        "speaker": speaker,
-                        "text": text.strip(),
-                        "offset": float(offset)
-                    })
+        elif isinstance(raw_transcription, dict):
+            gladia_utterances = raw_transcription.get("result", {}).get("utterances", []) if isinstance(raw_transcription.get("result"), dict) else []
+            segments = raw_transcription.get("segments") or gladia_utterances or raw_transcription.get("transcription") or []
+            if isinstance(segments, list):
+                for seg in segments:
+                    speaker = seg.get("speaker") or "Participant"
+                    text = seg.get("text") or ""
+                    offset = seg.get("start") or seg.get("start_time") or 0.0
+                    if text.strip():
+                        transcript_entries.append({
+                            "speaker": str(speaker),
+                            "text": text.strip(),
+                            "offset": float(offset)
+                        })
 
         # Save to Transcript table if not already populated
         inserted_count = 0

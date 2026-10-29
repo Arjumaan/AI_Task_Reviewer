@@ -7,6 +7,7 @@ from backend.app.core.database import Base
 from backend.app.models.base import UUIDPrimaryKeyMixin, TimestampMixin
 
 class NotificationType(str, enum.Enum):
+    TASK_ASSIGNED = "TASK_ASSIGNED"
     BRIEFING_SUMMARY = "BRIEFING_SUMMARY"
     REVIEW_FEEDBACK = "REVIEW_FEEDBACK"
     REVISION_REQUEST = "REVISION_REQUEST"
@@ -20,6 +21,7 @@ class NotificationStatus(str, enum.Enum):
     DRY_RUN = "DRY_RUN"
 
 class DeliveryProvider(str, enum.Enum):
+    SMTP = "SMTP"
     GMAIL_API = "GMAIL_API"
     DRY_RUN_CONSOLE = "DRY_RUN_CONSOLE"
 

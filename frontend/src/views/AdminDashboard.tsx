@@ -41,7 +41,7 @@ export const AdminDashboard: React.FC = () => {
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserName, setNewUserName] = useState('');
   const [newUserRole, setNewUserRole] = useState('INTERN');
-  const [newUserPass, setNewUserPass] = useState('SecretPass123!');
+  const [newUserPass, setNewUserPass] = useState('');
 
   const checkBotAuth = async () => {
     try {
@@ -130,9 +130,20 @@ export const AdminDashboard: React.FC = () => {
       setShowUserModal(false);
       setNewUserEmail('');
       setNewUserName('');
+      setNewUserPass('');
       await loadAdminData();
     } catch (err) {
       console.error('Failed to register user', err);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    if (!window.confirm(`Are you sure you want to permanently delete user "${userName}"?`)) return;
+    try {
+      await authApi.deleteUser(userId);
+      await loadAdminData();
+    } catch (err: any) {
+      alert(err?.response?.data?.detail || 'Failed to delete user');
     }
   };
 
@@ -374,9 +385,18 @@ export const AdminDashboard: React.FC = () => {
                   <div className="font-semibold text-slate-200">{u.full_name}</div>
                   <div className="text-slate-400 font-mono mt-0.5">{u.email}</div>
                 </div>
-                <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono font-medium">
-                  {u.role}
-                </span>
+                <div className="flex items-center space-x-2">
+                  <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono font-medium">
+                    {u.role}
+                  </span>
+                  <button
+                    onClick={() => handleDeleteUser(u.id, u.full_name)}
+                    className="p-1 text-slate-500 hover:text-rose-400 hover:bg-rose-950/50 rounded transition-colors"
+                    title={`Delete ${u.full_name}`}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>

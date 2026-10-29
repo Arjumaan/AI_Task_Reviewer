@@ -60,8 +60,9 @@ class SchedulingService:
                 f"[SCHEDULING DRY-RUN] Creating synthetic meeting for Task {task_id} ({meeting_type.value})",
                 extra={"task_id": task_id}
             )
-            # Clearly labeled simulated Google Meet URL
-            meet_url = f"https://meet.google.com/{conf_id}"
+            # User-configured default Google Meet URL
+            meet_url = getattr(settings, "DEFAULT_GOOGLE_MEET_URL", "https://meet.google.com/meet/rqp-ctfg-nri")
+            conf_id = "rqp-ctfg-nri"
             event_id = f"mock-cal-event-{uuid.uuid4().hex[:12]}"
             return event_id, meet_url, conf_id, True
 
@@ -113,5 +114,5 @@ class SchedulingService:
 
         except Exception as err:
             logger.error(f"[GOOGLE CALENDAR ERROR] Failed to create Google event: {err}. Falling back to dry-run details.")
-            meet_url = f"https://meet.google.com/{conf_id}"
-            return f"fallback-event-{uuid.uuid4().hex[:8]}", meet_url, conf_id, True
+            meet_url = getattr(settings, "DEFAULT_GOOGLE_MEET_URL", "https://meet.google.com/meet/rqp-ctfg-nri")
+            return f"fallback-event-{uuid.uuid4().hex[:8]}", meet_url, "rqp-ctfg-nri", True

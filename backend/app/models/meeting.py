@@ -45,6 +45,8 @@ class Meeting(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     conference_id = Column(String(64), nullable=True)
     is_dry_run = Column(Boolean, default=False, nullable=False)
     cancellation_reason = Column(Text, nullable=True)
+    meeting_round = Column(Integer, default=1, nullable=False)
+    feedback_summary = Column(Text, nullable=True)  # AI-generated post-session feedback
 
     task = relationship("Task", back_populates="meetings")
     attempts = relationship("MeetingAttempt", back_populates="meeting", cascade="all, delete-orphan", lazy="selectin")
@@ -57,7 +59,7 @@ class MeetingAttempt(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     meeting_id = Column(String(36), ForeignKey("meetings.id", ondelete="CASCADE"), nullable=False, index=True)
     attempt_number = Column(Integer, default=1, nullable=False)
     join_status = Column(Enum(JoinStatus), default=JoinStatus.ADMISSION_PENDING, nullable=False)
-    bot_display_name = Column(String(128), default="Task Reviewer AI (Assistant)", nullable=False)
+    bot_display_name = Column(String(128), default="Subha HR", nullable=False)
     join_time_utc = Column(DateTime(timezone=True), nullable=True)
     leave_time_utc = Column(DateTime(timezone=True), nullable=True)
     failure_reason = Column(Text, nullable=True)

@@ -55,6 +55,7 @@ storage/
 recordings/
 uploads/
 cache/
+scratch/
 *.wav
 *.mp3
 poc/*.png

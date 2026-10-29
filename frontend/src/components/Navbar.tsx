@@ -1,98 +1,136 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Shield, User as UserIcon, LogOut, Mic, Activity, CheckCircle2 } from 'lucide-react';
+import { Shield, LogOut, Video, LayoutDashboard, Briefcase, Settings2, Sparkles, GraduationCap } from 'lucide-react';
 
 interface NavbarProps {
-  onOpenVoiceRoom: () => void;
   activeTab: string;
   setActiveTab: (tab: string) => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenVoiceRoom, activeTab, setActiveTab }) => {
+export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
   const { user, logout } = useAuth();
 
   const getRoleBadge = (role?: string) => {
     switch (role) {
       case 'ADMIN':
-        return <span className="bg-purple-900/60 text-purple-300 border border-purple-500/30 text-xs px-2.5 py-0.5 rounded-full font-medium">Administrator</span>;
+        return (
+          <span className="neo-inset px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-purple-300 border border-purple-500/30">
+            Administrator
+          </span>
+        );
       case 'ASSIGNER':
-        return <span className="bg-blue-900/60 text-blue-300 border border-blue-500/30 text-xs px-2.5 py-0.5 rounded-full font-medium">Task Assigner</span>;
+        return (
+          <span className="neo-inset px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-cyan-300 border border-cyan-500/30">
+            Task Assigner
+          </span>
+        );
       case 'INTERN':
-        return <span className="bg-emerald-900/60 text-emerald-300 border border-emerald-500/30 text-xs px-2.5 py-0.5 rounded-full font-medium">Intern</span>;
+        return (
+          <span className="neo-inset px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-emerald-300 border border-emerald-500/30">
+            Intern
+          </span>
+        );
       default:
         return null;
     }
   };
 
   return (
-    <header className="bg-slate-900 border-b border-slate-800 sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <div className="flex items-center space-x-6">
-          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setActiveTab('dashboard')}>
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20">
-              <Shield className="w-5 h-5" />
+    <header className="sticky top-0 z-40 backdrop-blur-2xl bg-slate-950/75 border-b border-white/[0.08] shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
+        {/* Left: Brand Logo & Navigation */}
+        <div className="flex items-center space-x-8">
+          <div
+            className="flex items-center space-x-3.5 cursor-pointer group"
+            onClick={() => setActiveTab('dashboard')}
+          >
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/25 border border-white/20 transition-transform group-hover:scale-105 active:scale-95">
+              <Shield className="w-6 h-6 drop-shadow-md" />
             </div>
             <div>
-              <div className="font-bold text-lg text-slate-100 flex items-center gap-2">
+              <div className="font-extrabold text-base sm:text-lg text-white tracking-tight flex items-center gap-2">
                 Task Reviewer AI
-                <span className="text-[10px] bg-slate-800 text-cyan-400 border border-cyan-800/50 px-1.5 py-0.5 rounded font-mono">LOCAL FOSS</span>
               </div>
-              <div className="text-xs text-slate-400">Autonomous Reviewer & Voice Briefing</div>
+              <div className="text-[11px] text-slate-400 font-medium tracking-wide">
+                Autonomous Reviewer & Meeting AI
+              </div>
             </div>
           </div>
 
-          <nav className="hidden md:flex items-center space-x-1">
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'dashboard'
-                  ? 'bg-slate-800 text-cyan-400'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
-              }`}
-            >
-              Dashboard
-            </button>
+          {/* Navigation Tabs */}
+          <nav className="hidden md:flex items-center space-x-2 neo-inset p-1 rounded-2xl border border-white/[0.06]">
+            {user?.role === 'INTERN' ? (
+              <button
+                onClick={() => setActiveTab('workspace')}
+                className="flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold glass-btn-primary text-white shadow-md"
+              >
+                <GraduationCap className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Intern Tasks Dashboard</span>
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => setActiveTab('dashboard')}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                    activeTab === 'dashboard'
+                      ? 'glass-btn-primary text-white shadow-md'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+                  }`}
+                >
+                  <LayoutDashboard className="w-3.5 h-3.5" />
+                  <span>Executive Dashboard</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('workspace')}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                    activeTab === 'workspace'
+                      ? 'glass-btn-primary text-white shadow-md'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+                  }`}
+                >
+                  <Briefcase className="w-3.5 h-3.5" />
+                  <span>Tasks Workspace</span>
+                </button>
+              </>
+            )}
+
             {user?.role === 'ADMIN' && (
               <button
                 onClick={() => setActiveTab('system')}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                   activeTab === 'system'
-                    ? 'bg-slate-800 text-cyan-400'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                    ? 'glass-btn-primary text-white shadow-md'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
                 }`}
               >
-                System & Benchmarks
+                <Settings2 className="w-3.5 h-3.5" />
+                <span>System & Benchmarks</span>
               </button>
             )}
           </nav>
         </div>
 
+        {/* Right: Meeting Bot Status & User Profile */}
         <div className="flex items-center space-x-4">
-          <button
-            onClick={onOpenVoiceRoom}
-            className="flex items-center space-x-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow-md transition-all active:scale-95"
-            title="Open local Web Audio Voice Room"
-          >
-            <Mic className="w-4 h-4 animate-pulse" />
-            <span>Interactive Voice Room</span>
-          </button>
-
-          <div className="hidden sm:flex items-center space-x-2 text-xs bg-slate-800/60 border border-slate-700/50 px-3 py-1.5 rounded-lg text-slate-300">
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Ollama 1B Ready</span>
+          {/* Google Meet Bot Ready indicator */}
+          <div className="hidden sm:flex items-center space-x-2 neo-inset px-3.5 py-1.5 rounded-full border border-indigo-500/30 text-indigo-300 text-xs font-semibold">
+            <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
+            <Video className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Google Meet Bot Ready</span>
           </div>
 
           {user && (
-            <div className="flex items-center space-x-3 pl-2 border-l border-slate-800">
+            <div className="flex items-center space-x-3.5 pl-3 border-l border-white/[0.08]">
               <div className="flex flex-col text-right">
-                <span className="text-sm font-medium text-slate-200">{user.full_name}</span>
-                <div className="flex items-center justify-end space-x-1 mt-0.5">
+                <span className="text-xs sm:text-sm font-bold text-slate-100">{user.full_name}</span>
+                <div className="flex items-center justify-end mt-0.5">
                   {getRoleBadge(user.role)}
                 </div>
               </div>
               <button
                 onClick={logout}
-                className="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors"
+                className="p-2.5 rounded-xl neo-btn text-slate-400 hover:text-rose-400 hover:border-rose-500/30 transition-all active:scale-95"
                 title="Log out"
               >
                 <LogOut className="w-4 h-4" />

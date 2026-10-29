@@ -38,7 +38,8 @@ async def evaluate_review_round(
 ):
     res = await db.execute(
         select(ReviewRound).where(ReviewRound.id == round_id).options(
-            selectinload(ReviewRound.task),
+            selectinload(ReviewRound.task).selectinload(Task.intern),
+            selectinload(ReviewRound.task).selectinload(Task.versions),
             selectinload(ReviewRound.evaluation_results),
             selectinload(ReviewRound.revision_requests),
             selectinload(ReviewRound.questions)

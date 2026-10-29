@@ -51,6 +51,10 @@ export const authApi = {
   createUser: async (data: { email: string; full_name: string; role: string; password: string }) => {
     const res = await apiClient.post<User>('/users/', data);
     return res.data;
+  },
+  deleteUser: async (userId: string) => {
+    const res = await apiClient.delete<{ message: string; id: string }>(`/users/${userId}`);
+    return res.data;
   }
 };
 
@@ -64,9 +68,64 @@ export const taskApi = {
     const res = await apiClient.get<Task>(`/tasks/${taskId}`);
     return res.data;
   },
-  create: async (data: { title: string; intern_id?: string }) => {
+  create: async (data: { title: string; intern_id?: string; deadline_iso?: string; display_timezone?: string }) => {
     const res = await apiClient.post<Task>('/tasks/', data);
     return res.data;
+  },
+  delete: async (taskId: string) => {
+    const res = await apiClient.delete<{ status: string; deleted_task_id: string; title: string; message: string }>(`/tasks/${taskId}`);
+    return res.data;
+  },
+  bulkAssign: async (formData: FormData) => {
+    const res = await apiClient.post<{
+      message: string;
+      task_title: string;
+      common_document: string;
+      common_meeting_url: string;
+      deadline: string;
+      timezone: string;
+      assigned_count: number;
+      tasks: Array<{
+        task_id: string;
+        intern_id: string;
+        intern_name: string;
+        intern_email: string;
+        meeting_id: string;
+        email_status: string;
+      }>;
+      email_dispatch_summary: any[];
+    }>('/tasks/bulk-assign', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return res.data;
+  },
+  getSmtpStatus: async () => {
+    const res = await apiClient.get<any>('/tasks/diagnostics/smtp');
+    return res.data;
+  },
+  excelAssign: async (formData: FormData) => {
+    const res = await apiClient.post<{
+      message: string;
+      source_file: string;
+      assigned_count: number;
+      assignments: Array<{
+        task_id: string;
+        intern_id: string;
+        intern_name: string;
+        intern_email: string;
+        task_title: string;
+        meeting_id: string;
+        meeting_url: string;
+        deadline: string;
+        email_status: string;
+      }>;
+    }>('/tasks/excel-assign', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return res.data;
+  },
+  getExcelTemplate: () => {
+    return `${API_BASE}/tasks/excel-template`;
   },
   uploadDocument: async (taskId: string, file: File) => {
     const formData = new FormData();
@@ -84,7 +143,7 @@ export const taskApi = {
     const res = await apiClient.post<Task>(`/tasks/${taskId}/approve-specification`, draft);
     return res.data;
   },
-  update: async (taskId: string, data: { title?: string; intern_id?: string }) => {
+  update: async (taskId: string, data: { title?: string; intern_id?: string; deadline_iso?: string; display_timezone?: string }) => {
     const res = await apiClient.patch<Task>(`/tasks/${taskId}`, data);
     return res.data;
   },
@@ -132,6 +191,10 @@ export const schedulingApi = {
 export const submissionApi = {
   create: async (data: { task_id: string; repository_url: string; commit_hash?: string; notes?: string }) => {
     const res = await apiClient.post<Submission>('/submissions/', data);
+    return res.data;
+  },
+  getMy: async () => {
+    const res = await apiClient.get<Submission[]>('/submissions/my');
     return res.data;
   },
   getByTask: async (taskId: string) => {
@@ -192,14 +255,20 @@ export interface BotStatus {
 
 // Meeting Bot & Session API
 export const meetingApi = {
+  listAll: async () => {
+    const res = await apiClient.get<Meeting[]>('/meetings/');
+    return res.data;
+  },
   getBotStatus: async () => {
     const res = await apiClient.get<BotStatus>('/meetings/bot-status');
     return res.data;
   },
-  launchDirectBot: async (meet_url: string, is_speaking: boolean = true) => {
+  launchDirectBot: async (meet_url: string, is_speaking: boolean = true, task_id?: string) => {
     const res = await apiClient.post<{ status: string; bot_id?: string; pid?: number; meet_url: string; message: string; is_speaking?: boolean }>('/meetings/launch-direct', {
       meet_url,
-      is_speaking
+      is_speaking,
+      bot_name: 'Subha HR',
+      task_id
     });
     return res.data;
   },
@@ -225,6 +294,29 @@ export const meetingApi = {
   },
   getGoogleAuthStatus: async () => {
     const res = await apiClient.get<{ authenticated: boolean }>('/meetings/google-auth-status');
+    return res.data;
+  },
+  completeBriefing: async (meetingId: string) => {
+    const res = await apiClient.post<{
+      status: string;
+      feedback_summary: string;
+      task_status: string;
+      review_meeting_id: string;
+      review_meeting_url: string;
+      review_scheduled_at: string;
+    }>(`/meetings/${meetingId}/complete-briefing`);
+    return res.data;
+  },
+  completeReview: async (meetingId: string, data: { passed: boolean; feedback: string; gaps?: string[] }) => {
+    const res = await apiClient.post<{
+      status: string;
+      message: string;
+      task_id?: string;
+      next_meeting_id?: string;
+      next_meeting_url?: string;
+      next_review_scheduled_at?: string;
+      gaps?: string[];
+    }>(`/meetings/${meetingId}/complete-review`, data);
     return res.data;
   },
   launchGoogleLogin: async () => {

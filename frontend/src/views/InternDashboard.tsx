@@ -18,15 +18,16 @@ import {
   ChevronRight,
   Bot,
   Square,
+  Video,
   RefreshCw,
   Volume2
 } from 'lucide-react';
 
 interface InternDashboardProps {
-  onOpenVoiceRoom: (taskTitle?: string, taskId?: string) => void;
+  initialTaskId?: string;
 }
 
-export const InternDashboard: React.FC<InternDashboardProps> = ({ onOpenVoiceRoom }) => {
+export const InternDashboard: React.FC<InternDashboardProps> = ({ initialTaskId }) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -46,7 +47,7 @@ export const InternDashboard: React.FC<InternDashboardProps> = ({ onOpenVoiceRoo
   const [botStatus, setBotStatus] = useState<BotStatus | null>(null);
   const [isBotLaunching, setIsBotLaunching] = useState(false);
   const [isSpeakingMode, setIsSpeakingMode] = useState<boolean>(true);
-  const [customMeetUrl, setCustomMeetUrl] = useState('');
+  const [customMeetUrl, setCustomMeetUrl] = useState('https://meet.google.com/meet/rqp-ctfg-nri');
   const [botFeedback, setBotFeedback] = useState<string | null>(null);
 
   const checkBotStatus = async () => {
@@ -70,7 +71,7 @@ export const InternDashboard: React.FC<InternDashboardProps> = ({ onOpenVoiceRoo
     try {
       setIsBotLaunching(true);
       setBotFeedback(null);
-      const res = await meetingApi.launchDirectBot(customMeetUrl.trim(), isSpeakingMode);
+      const res = await meetingApi.launchDirectBot(customMeetUrl.trim(), isSpeakingMode, selectedTask?.id);
       setBotFeedback(res.message);
       await checkBotStatus();
     } catch (err: any) {
@@ -125,7 +126,10 @@ export const InternDashboard: React.FC<InternDashboardProps> = ({ onOpenVoiceRoo
       setIsLoading(true);
       const allTasks = await taskApi.list();
       setTasks(allTasks);
-      if (allTasks.length > 0 && !selectedTask) {
+      if (initialTaskId && allTasks.some((t) => t.id === initialTaskId)) {
+        const match = allTasks.find((t) => t.id === initialTaskId);
+        if (match) setSelectedTask(match);
+      } else if (allTasks.length > 0 && !selectedTask) {
         setSelectedTask(allTasks[0]);
       } else if (selectedTask) {
         const refreshed = await taskApi.get(selectedTask.id);
@@ -140,7 +144,7 @@ export const InternDashboard: React.FC<InternDashboardProps> = ({ onOpenVoiceRoo
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [initialTaskId]);
 
   const handleSubmitDeliverable = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -177,32 +181,67 @@ export const InternDashboard: React.FC<InternDashboardProps> = ({ onOpenVoiceRoo
     }
   };
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'PASSED':
+        return <span className="bg-emerald-950 text-emerald-300 border border-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-medium">Passed</span>;
+      case 'SUBMITTED':
+        return <span className="bg-purple-950 text-purple-300 border border-purple-800 text-xs px-2.5 py-0.5 rounded-full font-medium">Submitted</span>;
+      case 'REVIEW_SCHEDULED':
+        return <span className="bg-sky-950 text-sky-300 border border-sky-800 text-xs px-2.5 py-0.5 rounded-full font-medium">Review Scheduled</span>;
+      case 'REVISION_REQUIRED':
+        return <span className="bg-amber-950 text-amber-300 border border-amber-800 text-xs px-2.5 py-0.5 rounded-full font-medium">Revision Required</span>;
+      case 'HUMAN_REVIEW_REQUIRED':
+        return <span className="bg-rose-950 text-rose-300 border border-rose-800 text-xs px-2.5 py-0.5 rounded-full font-medium">Human Review Flagged</span>;
+      case 'SPECIFICATION_APPROVED':
+        return <span className="bg-cyan-950 text-cyan-300 border border-cyan-800 text-xs px-2.5 py-0.5 rounded-full font-medium">Spec Approved</span>;
+      case 'BRIEFING_SCHEDULED':
+        return <span className="bg-blue-950 text-blue-300 border border-blue-800 text-xs px-2.5 py-0.5 rounded-full font-medium">Briefing Scheduled</span>;
+      case 'IN_PROGRESS':
+        return <span className="bg-indigo-950 text-indigo-300 border border-indigo-800 text-xs px-2.5 py-0.5 rounded-full font-medium">In Progress</span>;
+      default:
+        return <span className="bg-slate-800 text-slate-300 border border-slate-700 text-xs px-2.5 py-0.5 rounded-full font-medium">{status}</span>;
+    }
+  };
+
   const currentVersion = selectedTask?.versions && selectedTask.versions.length > 0
     ? selectedTask.versions[0]
     : null;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fadeIn">
       {/* Header */}
-      <div className="pb-6 border-b border-slate-800">
-        <h1 className="text-2xl font-bold text-slate-100">Intern Learning & Review Hub</h1>
-        <p className="text-sm text-slate-400">
-          Review approved assignment specifications, participate in voice briefings, deliver artifacts, and address review revisions.
-        </p>
+      <div className="glass-card neo-surface rounded-3xl p-6 sm:p-7 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-emerald-400">
+            <Layers className="w-4 h-4" />
+            <span>Intern Learning & Execution Hub</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            Assignments & Submissions
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-300 max-w-2xl">
+            Review approved assignment specifications, participate in Google Meet briefings, deliver repository code, and address review revisions.
+          </p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Task Selector (Left 4 Cols) */}
         <div className="lg:col-span-4 space-y-3">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
-            My Assigned Tasks ({tasks.length})
-          </h2>
+          <div className="flex items-center justify-between pb-2 border-b border-white/[0.08]">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              My Assigned Tasks ({tasks.length})
+            </h2>
+            <span className="text-[11px] font-mono text-emerald-400">Active</span>
+          </div>
+
           {isLoading ? (
-            <div className="p-8 text-center text-slate-500 bg-slate-900/60 rounded-2xl border border-slate-800">
+            <div className="p-8 text-center text-slate-500 glass-card neo-surface rounded-2xl">
               Loading assignments...
             </div>
           ) : tasks.length === 0 ? (
-            <div className="p-8 text-center text-slate-500 bg-slate-900/60 rounded-2xl border border-slate-800">
+            <div className="p-8 text-center text-slate-500 glass-card neo-surface rounded-2xl">
               No tasks assigned yet. Your assigner will allocate new tasks here.
             </div>
           ) : (
@@ -210,18 +249,18 @@ export const InternDashboard: React.FC<InternDashboardProps> = ({ onOpenVoiceRoo
               <div
                 key={task.id}
                 onClick={() => setSelectedTask(task)}
-                className={`p-4 rounded-2xl border cursor-pointer transition-all ${
+                className={`p-4 rounded-2xl cursor-pointer transition-all ${
                   selectedTask?.id === task.id
-                    ? 'bg-slate-800/90 border-cyan-500/80 shadow-lg shadow-cyan-950/40'
-                    : 'bg-slate-900/80 border-slate-800/80 hover:bg-slate-800/50 hover:border-slate-700'
+                    ? 'glass-card neo-surface border border-emerald-400/50 shadow-lg shadow-emerald-500/20 ring-1 ring-emerald-400/30'
+                    : 'glass-card-interactive neo-surface'
                 }`}
               >
                 <div className="flex items-start justify-between">
-                  <h3 className="font-semibold text-slate-100 text-sm line-clamp-1">{task.title}</h3>
+                  <h3 className="font-bold text-slate-100 text-sm line-clamp-1">{task.title}</h3>
                   <ChevronRight className="w-4 h-4 text-slate-500 flex-shrink-0" />
                 </div>
                 <div className="flex items-center justify-between mt-3 text-xs">
-                  <span className="font-mono text-cyan-400">{task.status}</span>
+                  {getStatusBadge(task.status)}
                   <span className="text-slate-500">
                     {new Date(task.created_at).toLocaleDateString()}
                   </span>
@@ -236,20 +275,14 @@ export const InternDashboard: React.FC<InternDashboardProps> = ({ onOpenVoiceRoo
           {selectedTask ? (
             <>
               {/* Task Hero Card */}
-              <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-slate-800 gap-2">
+              <div className="glass-card neo-surface rounded-3xl p-6 sm:p-7 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-white/[0.08] gap-2">
                   <div>
-                    <span className="text-xs font-mono text-cyan-400">ID: {selectedTask.id.substring(0, 8)}...</span>
-                    <h2 className="text-xl font-bold text-slate-100">{selectedTask.title}</h2>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => onOpenVoiceRoom(selectedTask.title, selectedTask.id)}
-                      className="flex items-center space-x-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold text-xs px-3.5 py-2 rounded-xl shadow-md transition-all active:scale-95"
-                    >
-                      <Mic className="w-4 h-4" />
-                      <span>Join Voice Briefing Room</span>
-                    </button>
+                    <span className="text-xs font-mono text-emerald-400">ID: {selectedTask.id.substring(0, 8)}...</span>
+                    <div className="flex items-center space-x-3">
+                      <h2 className="text-xl font-bold text-slate-100">{selectedTask.title}</h2>
+                      {getStatusBadge(selectedTask.status)}
+                    </div>
                   </div>
                 </div>
 
@@ -328,7 +361,110 @@ export const InternDashboard: React.FC<InternDashboardProps> = ({ onOpenVoiceRoo
                     Specification draft is being compiled by your task assigner.
                   </div>
                 )}
+
+                {/* AI Document Intelligence & Grounding Card (if analyzed document exists) */}
+                {selectedTask.documents && selectedTask.documents.some((d) => d.analysis_json) && (
+                  <div className="space-y-3 pt-2">
+                    {selectedTask.documents
+                      .filter((d) => d.analysis_json)
+                      .map((doc) => {
+                        let analysis: any = null;
+                        try {
+                          analysis = JSON.parse(doc.analysis_json!);
+                        } catch (e) {}
+                        if (!analysis) return null;
+                        return (
+                          <div
+                            key={doc.id}
+                            className="glass-card neo-surface rounded-2xl p-4 sm:p-5 border border-cyan-500/30 space-y-3 text-xs"
+                          >
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-white/[0.08]">
+                              <div className="flex items-center space-x-2">
+                                <Sparkles className="w-4 h-4 text-cyan-400 animate-pulse" />
+                                <div>
+                                  <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-400">
+                                    AI Document Ingestion & Briefing Grounding
+                                  </span>
+                                  <h5 className="font-bold text-slate-100 text-sm">{analysis.title || doc.original_filename || doc.filename || 'Task Document'}</h5>
+                                </div>
+                              </div>
+                              <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-emerald-400 neo-inset px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+                                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                                Subha Verified Ready for Call
+                              </span>
+                            </div>
+
+                            {analysis.executive_summary && (
+                              <div>
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                                  Document Summary
+                                </span>
+                                <p className="text-slate-300 leading-relaxed bg-slate-950/50 p-3 rounded-xl border border-slate-800/80">
+                                  {analysis.executive_summary}
+                                </p>
+                              </div>
+                            )}
+
+                            {analysis.items && analysis.items.length > 0 && (
+                              <div>
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                                  Key Findings & Items to Deliver ({analysis.items.length})
+                                </span>
+                                <div className="max-h-44 overflow-y-auto space-y-1 pr-1">
+                                  {analysis.items.map((item: any, idx: number) => (
+                                    <div
+                                      key={idx}
+                                      className="flex items-center justify-between p-2 rounded-lg bg-slate-950/60 border border-slate-800/80 text-[11px]"
+                                    >
+                                      <div className="flex items-center space-x-2">
+                                        <span className="font-mono font-bold text-cyan-400">{item.code}</span>
+                                        <span className="text-slate-200">{item.title}</span>
+                                      </div>
+                                      {item.category && (
+                                        <span className="text-indigo-300 font-mono text-[10px] bg-indigo-950/60 px-1.5 py-0.5 rounded">
+                                          {item.category}
+                                        </span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {analysis.spoken_briefing_script && (
+                              <div className="p-3 bg-indigo-950/30 border border-indigo-500/20 rounded-xl space-y-1">
+                                <div className="flex items-center space-x-1.5 text-indigo-300 font-semibold text-[11px]">
+                                  <Volume2 className="w-3.5 h-3.5 text-indigo-400" />
+                                  <span>What Subha will explain to you in the meeting</span>
+                                </div>
+                                <p className="text-slate-300 text-xs italic leading-relaxed">
+                                  "{analysis.spoken_briefing_script}"
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
               </div>
+
+              {/* Subha AI Session Feedback Card */}
+              {selectedTask.meetings?.some((m) => m.feedback_summary) && (
+                <div className="glass-card neo-surface rounded-2xl p-5 border border-purple-500/30 bg-purple-950/20 space-y-2.5 text-xs animate-fadeIn">
+                  <div className="flex items-center space-x-2 text-purple-300 font-bold uppercase tracking-wider text-[11px]">
+                    <Sparkles className="w-4 h-4 text-purple-400" />
+                    <span>Subha Briefing Session Feedback</span>
+                  </div>
+                  {selectedTask.meetings
+                    .filter((m) => m.feedback_summary)
+                    .map((m) => (
+                      <div key={m.id} className="p-3 bg-black/40 rounded-xl border border-white/[0.06] text-slate-200 leading-relaxed font-mono text-[11px]">
+                        {m.feedback_summary}
+                      </div>
+                    ))}
+                </div>
+              )}
 
               {/* Scheduled Meetings Card */}
               <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 space-y-4">
@@ -417,71 +553,79 @@ export const InternDashboard: React.FC<InternDashboardProps> = ({ onOpenVoiceRoo
                     {selectedTask.meetings.map((m) => (
                       <div
                         key={m.id}
-                        className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-950/80 border border-slate-800 rounded-xl text-xs gap-3"
+                        className="p-4 bg-slate-950/80 border border-slate-800/90 rounded-xl text-xs space-y-3 hover:border-slate-700/80 transition-all shadow-sm"
                       >
-                        <div className="space-y-1">
+                        {/* Header: Session Badge, Round, Status, and Date */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-800/60">
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-slate-100">{m.meeting_type} SESSION</span>
-                            <span className="bg-blue-950/80 border border-blue-800 text-blue-300 px-2.5 py-0.5 rounded-full text-[10px] font-mono">
+                            <span className={`px-2.5 py-0.5 rounded-md font-bold tracking-wider text-[11px] uppercase ${
+                              m.meeting_type === 'BRIEFING'
+                                ? 'bg-indigo-950/80 text-indigo-300 border border-indigo-800/70'
+                                : 'bg-violet-950/80 text-violet-300 border border-violet-800/70'
+                            }`}>
+                              {m.meeting_type} SESSION {m.meeting_round ? `#${m.meeting_round}` : ''}
+                            </span>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono border ${
+                              m.status === 'COMPLETED' ? 'bg-slate-800/90 text-slate-300 border-slate-700' :
+                              m.status === 'IN_PROGRESS' ? 'bg-emerald-950 text-emerald-300 border-emerald-600 animate-pulse' :
+                              'bg-blue-950 text-blue-300 border-blue-800'
+                            }`}>
                               {m.status}
                             </span>
                           </div>
-                          <div className="text-slate-300 font-medium">
-                            📅 {new Date(m.scheduled_start_utc).toLocaleString('en-IN', {
-                              dateStyle: 'full',
-                              timeStyle: 'short',
-                              timeZone: m.timezone || 'Asia/Kolkata'
-                            })} ({m.timezone || 'Asia/Kolkata'})
+                          <div className="text-slate-300 text-xs font-medium flex items-center gap-1.5">
+                            <Calendar className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
+                            <span>
+                              {new Date(m.scheduled_start_utc).toLocaleString('en-IN', {
+                                dateStyle: 'full',
+                                timeStyle: 'short',
+                                timeZone: m.timezone || 'Asia/Kolkata'
+                              })}
+                            </span>
+                            <span className="text-slate-500 text-[11px]">({m.timezone || 'Asia/Kolkata'})</span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
+
+                        {/* Action Buttons Row */}
+                        <div className="flex flex-wrap items-center gap-2.5">
                           {m.google_meet_url && (
                             <a
                               href={m.google_meet_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center space-x-1.5 px-3.5 py-2 bg-cyan-600/20 hover:bg-cyan-600/30 border border-cyan-500/50 rounded-xl text-cyan-300 hover:text-cyan-200 font-semibold transition-colors"
+                              className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-cyan-600/20 hover:bg-cyan-600/30 border border-cyan-500/50 rounded-lg text-cyan-300 hover:text-cyan-200 font-semibold transition-colors"
                             >
+                              <Video className="w-3.5 h-3.5 text-cyan-400" />
                               <span>Join Google Meet</span>
                               <ExternalLink className="w-3.5 h-3.5" />
                             </a>
                           )}
-                          {m.google_meet_url && (
-                            botStatus?.is_running && botStatus.meeting_id === m.id ? (
-                              <button
-                                onClick={handleStopBot}
-                                className="flex items-center space-x-1 px-3 py-2 bg-rose-950/60 hover:bg-rose-900/60 border border-rose-700/60 rounded-xl text-rose-300 text-xs font-semibold"
-                              >
-                                <Square className="w-3 h-3 text-rose-400" />
-                                <span>Stop Bot</span>
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleLaunchMeetingBot(m.id)}
-                                disabled={isBotLaunching}
-                                className="flex items-center space-x-1 px-3 py-2 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/50 rounded-xl text-indigo-300 hover:text-indigo-200 font-semibold text-xs transition-colors"
-                              >
-                                <Bot className="w-3.5 h-3.5" />
-                                <span>{isSpeakingMode ? 'Launch Speaking Bot' : 'Launch Recording Bot'}</span>
-                              </button>
-                            )
-                          )}
+                          {botStatus?.is_running && botStatus.meeting_id === m.id ? (
+                            <button
+                              onClick={handleStopBot}
+                              className="inline-flex items-center space-x-1 px-3 py-1.5 bg-rose-950/60 hover:bg-rose-900/60 border border-rose-700/60 rounded-lg text-rose-300 text-xs font-semibold"
+                            >
+                              <Square className="w-3 h-3 text-rose-400" />
+                              <span>Stop Bot</span>
+                            </button>
+                          ) : m.status !== 'COMPLETED' ? (
+                            <button
+                              onClick={() => handleLaunchMeetingBot(m.id)}
+                              disabled={isBotLaunching}
+                              className="inline-flex items-center space-x-1 px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/50 rounded-lg text-indigo-300 hover:text-indigo-200 font-semibold text-xs transition-colors disabled:opacity-50"
+                            >
+                              <Bot className="w-3.5 h-3.5" />
+                              <span>{isSpeakingMode ? 'Launch Speaking Bot' : 'Launch Recording Bot'}</span>
+                            </button>
+                          ) : null}
                           <button
                             onClick={() => handleSyncMeetingTranscripts(m.id)}
                             disabled={isSyncingTranscripts}
-                            className="flex items-center space-x-1.5 px-3 py-2 bg-cyan-950/60 hover:bg-cyan-900/60 border border-cyan-700/60 rounded-xl text-cyan-300 font-semibold text-xs transition-colors"
+                            className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-cyan-950/60 hover:bg-cyan-900/60 border border-cyan-700/60 rounded-lg text-cyan-300 font-semibold text-xs transition-colors disabled:opacity-50"
                             title="Sync latest MeetingBaas recordings and transcripts"
                           >
                             <RefreshCw className={`w-3.5 h-3.5 ${isSyncingTranscripts ? 'animate-spin' : ''}`} />
                             <span>Sync Transcripts</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => onOpenVoiceRoom(selectedTask.title, selectedTask.id)}
-                            className="flex items-center space-x-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-slate-200 font-semibold transition-colors"
-                          >
-                            <Mic className="w-3.5 h-3.5 text-blue-400" />
-                            <span>Web Voice Room</span>
                           </button>
                         </div>
                         {/* Diarized Transcripts Preview */}

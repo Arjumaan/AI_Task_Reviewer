@@ -1,147 +1,203 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { authApi } from '../api/client';
-import { Shield, Lock, Mail, ArrowRight, UserCheck, Briefcase, GraduationCap, UserPlus } from 'lucide-react';
+import {
+  Shield,
+  Lock,
+  Mail,
+  ArrowRight,
+  Briefcase,
+  GraduationCap,
+  UserPlus,
+  Eye,
+  EyeOff,
+  Sparkles,
+  CheckCircle2
+} from 'lucide-react';
+
+type PortalMode = 'assigner' | 'intern' | 'register';
 
 export const LoginView: React.FC = () => {
   const { login } = useAuth();
-  const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [portal, setPortal] = useState<PortalMode>('assigner');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [role, setRole] = useState<'INTERN' | 'ASSIGNER'>('INTERN');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const switchPortal = (newPortal: PortalMode) => {
+    setPortal(newPortal);
+    setError(null);
+    setSuccessMsg(null);
+    setEmail('');
+    setPassword('');
+    setFullName('');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setSuccessMsg(null);
     setIsLoading(true);
+
     try {
-      if (isRegisterMode) {
+      if (portal === 'register') {
         await authApi.register({
           email: email.trim().toLowerCase(),
           full_name: fullName.trim(),
           password,
-          role
+          role: 'INTERN'
         });
-        setSuccessMsg('Account registered successfully! Signing in...');
+        setSuccessMsg('Intern registered successfully! Signing in to workspace...');
         await login(email.trim().toLowerCase(), password);
       } else {
         await login(email.trim().toLowerCase(), password);
       }
     } catch (err: any) {
-      const msg = err?.response?.data?.detail || err?.message || 'Operation failed. Please try again.';
+      const msg = err?.response?.data?.detail || err?.message || 'Authentication failed. Please check your credentials.';
       setError(typeof msg === 'string' ? msg : JSON.stringify(msg));
     } finally {
       setIsLoading(false);
     }
   };
 
-  const quickLogin = async (userEmail: string) => {
-    setEmail(userEmail);
+  // Safe pre-fill helpers for evaluation without showing password in plaintext
+  const handlePrefillAssignerDemo = () => {
+    setEmail('assigner@internal.company');
     setPassword('SecretPass123!');
-    setIsLoading(true);
-    setError(null);
-    setSuccessMsg(null);
-    try {
-      await login(userEmail, 'SecretPass123!');
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || 'Quick login failed. Ensure seed data is initialized.');
-    } finally {
-      setIsLoading(false);
-    }
+  };
+
+  const handlePrefillInternDemo = () => {
+    setEmail('intern@internal.company');
+    setPassword('SecretPass123!');
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <div className="mx-auto w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-xl shadow-cyan-500/20 mb-4">
-          <Shield className="w-8 h-8" />
+    <div className="min-h-screen flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden bg-slate-950">
+      {/* Background ambient lighting */}
+      <div className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-40 -right-40 w-96 h-96 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-blue-600/5 blur-3xl pointer-events-none" />
+
+      {/* Brand Header */}
+      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center relative z-10">
+        <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-xl shadow-cyan-500/30 border border-white/20 mb-4 transition-transform hover:scale-105">
+          <Shield className="w-9 h-9 drop-shadow-md" />
         </div>
-        <h2 className="text-3xl font-extrabold text-slate-100 tracking-tight">Task Reviewer AI</h2>
-        <p className="mt-2 text-sm text-slate-400">
-          Autonomous Intern Task Briefing, Evidence Evaluation & Revision System
+        <h1 className="text-3xl font-black text-white tracking-tight">Task Reviewer AI</h1>
+        <p className="mt-2 text-xs sm:text-sm text-slate-400">
+          Autonomous Task Briefing, Evidence Evaluation & Voice Review Platform
         </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-slate-900 py-8 px-6 shadow-2xl border border-slate-800 rounded-2xl sm:px-10 space-y-6">
-          <div className="flex border-b border-slate-800 pb-3">
+      {/* Main Login Card */}
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+        <div className="glass-card neo-surface py-7 px-6 sm:px-9 rounded-3xl space-y-6">
+          {/* Portal Switcher Tabs */}
+          <div className="grid grid-cols-3 p-1 rounded-2xl neo-inset border border-white/[0.06] text-xs font-bold">
             <button
               type="button"
-              onClick={() => { setIsRegisterMode(false); setError(null); }}
-              className={`flex-1 pb-2 text-sm font-semibold border-b-2 transition-colors ${
-                !isRegisterMode
-                  ? 'border-cyan-500 text-cyan-400'
-                  : 'border-transparent text-slate-400 hover:text-slate-200'
+              onClick={() => switchPortal('assigner')}
+              className={`flex items-center justify-center space-x-1.5 py-2.5 rounded-xl transition-all ${
+                portal === 'assigner'
+                  ? 'glass-btn-primary text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Sign In
+              <Briefcase className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>Assigner</span>
             </button>
+
             <button
               type="button"
-              onClick={() => { setIsRegisterMode(true); setError(null); }}
-              className={`flex-1 pb-2 text-sm font-semibold border-b-2 transition-colors ${
-                isRegisterMode
-                  ? 'border-cyan-500 text-cyan-400'
-                  : 'border-transparent text-slate-400 hover:text-slate-200'
+              onClick={() => switchPortal('intern')}
+              className={`flex items-center justify-center space-x-1.5 py-2.5 rounded-xl transition-all ${
+                portal === 'intern'
+                  ? 'glass-btn-primary text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              Register New Intern
+              <GraduationCap className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>Intern</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => switchPortal('register')}
+              className={`flex items-center justify-center space-x-1.5 py-2.5 rounded-xl transition-all ${
+                portal === 'register'
+                  ? 'glass-btn-primary text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <UserPlus className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>Register</span>
             </button>
           </div>
 
+          {/* Portal Context Banner */}
+          <div className="space-y-1">
+            <div className="flex items-center space-x-2">
+              <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full neo-inset ${
+                portal === 'assigner'
+                  ? 'text-cyan-400 border border-cyan-500/30'
+                  : portal === 'intern'
+                  ? 'text-emerald-400 border border-emerald-500/30'
+                  : 'text-purple-400 border border-purple-500/30'
+              }`}>
+                {portal === 'assigner' ? 'Leadership Portal' : portal === 'intern' ? 'Intern Portal' : 'New Intern Registration'}
+              </span>
+            </div>
+            <h2 className="text-lg font-bold text-slate-100">
+              {portal === 'assigner' && 'Assigner & Reviewer Login'}
+              {portal === 'intern' && 'Intern Workspace Login'}
+              {portal === 'register' && 'Register New Intern'}
+            </h2>
+            <p className="text-xs text-slate-400">
+              {portal === 'assigner' && 'Sign in to create tasks, dispatch Google Meet AI bots, and inspect deliverables.'}
+              {portal === 'intern' && 'Sign in to view your task briefs, schedule voice reviews, and submit code.'}
+              {portal === 'register' && 'Create your intern account to receive task assignments and start evaluations.'}
+            </p>
+          </div>
+
+          {/* Alerts */}
           {error && (
-            <div className="p-3 bg-rose-950/60 border border-rose-800 text-rose-300 text-sm rounded-xl">
+            <div className="p-3 bg-rose-950/70 border border-rose-800 text-rose-300 text-xs rounded-xl">
               {error}
             </div>
           )}
 
           {successMsg && (
-            <div className="p-3 bg-emerald-950/60 border border-emerald-800 text-emerald-300 text-sm rounded-xl">
-              {successMsg}
+            <div className="p-3 bg-emerald-950/70 border border-emerald-800 text-emerald-300 text-xs rounded-xl flex items-center space-x-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+              <span>{successMsg}</span>
             </div>
           )}
 
+          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {isRegisterMode && (
-              <>
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-slate-400 tracking-wider mb-1">
-                    Full Name & Title
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="e.g. Priyanshu Patel (AI/ML Intern)"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition-colors"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold uppercase text-slate-400 tracking-wider mb-1">
-                    Account Role
-                  </label>
-                  <select
-                    value={role}
-                    onChange={(e) => setRole(e.target.value as any)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-cyan-500 transition-colors"
-                  >
-                    <option value="INTERN">Intern (Learner & Reviewee)</option>
-                    <option value="ASSIGNER">Assigner (Tech Lead / Task Creator)</option>
-                  </select>
-                </div>
-              </>
+            {portal === 'register' && (
+              <div>
+                <label className="block text-xs font-semibold uppercase text-slate-400 tracking-wider mb-1">
+                  Full Name & Title
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="e.g. Maya Sharma (AI/ML Intern)"
+                  className="w-full neo-inset rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-400/50 transition-colors"
+                />
+              </div>
             )}
 
             <div>
               <label className="block text-xs font-semibold uppercase text-slate-400 tracking-wider mb-1">
-                Email Address
+                {portal === 'intern' ? 'Intern Email Address' : portal === 'assigner' ? 'Work / Staff Email' : 'Email Address'}
               </label>
               <div className="relative">
                 <Mail className="w-5 h-5 absolute left-3 top-3 text-slate-500" />
@@ -150,25 +206,35 @@ export const LoginView: React.FC = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="user@internal.company"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition-colors"
+                  placeholder={portal === 'assigner' ? 'lead@internal.company' : 'intern@internal.company'}
+                  className="w-full neo-inset rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-400/50 transition-colors"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase text-slate-400 tracking-wider mb-1">
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-semibold uppercase text-slate-400 tracking-wider">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="text-[11px] text-slate-400 hover:text-slate-200 flex items-center space-x-1"
+                >
+                  {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  <span>{showPassword ? 'Hide' : 'Show'}</span>
+                </button>
+              </div>
               <div className="relative">
                 <Lock className="w-5 h-5 absolute left-3 top-3 text-slate-500" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500 transition-colors"
+                  className="w-full neo-inset rounded-xl pl-10 pr-10 py-2.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-400/50 transition-colors"
                 />
               </div>
             </div>
@@ -176,105 +242,62 @@ export const LoginView: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold py-2.5 rounded-xl shadow-lg shadow-cyan-600/30 transition-all disabled:opacity-50"
+              className="w-full flex items-center justify-center space-x-2 glass-btn-primary text-white font-bold py-3 rounded-xl shadow-lg shadow-cyan-500/25 transition-all disabled:opacity-50 active:scale-95"
             >
-              <span>{isLoading ? 'Processing...' : isRegisterMode ? 'Create Account & Sign In' : 'Sign In'}</span>
+              <span>
+                {isLoading
+                  ? 'Processing...'
+                  : portal === 'register'
+                  ? 'Complete Registration'
+                  : portal === 'assigner'
+                  ? 'Sign In to Assigner Portal'
+                  : 'Sign In to Intern Workspace'}
+              </span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
 
-          {/* Quick Demo Login Section */}
-          <div className="pt-4 border-t border-slate-800 space-y-3">
-            <span className="text-xs font-semibold uppercase text-slate-400 tracking-wider block text-center">
-              1-Click Instant Login (Pre-Configured Accounts)
-            </span>
-
-            {/* Core Role Quick Logins */}
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => quickLogin('assigner@internal.company')}
-                className="flex items-center space-x-2.5 p-2.5 bg-slate-800/90 hover:bg-slate-700 border border-slate-700/80 rounded-xl text-left transition-all"
-              >
-                <Briefcase className="w-4 h-4 text-blue-400 flex-shrink-0" />
-                <div>
-                  <div className="text-xs font-bold text-slate-100">Assigner</div>
-                  <div className="text-[10px] text-slate-400 font-mono">assigner@internal</div>
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => quickLogin('admin@internal.company')}
-                className="flex items-center space-x-2.5 p-2.5 bg-slate-800/90 hover:bg-slate-700 border border-slate-700/80 rounded-xl text-left transition-all"
-              >
-                <UserCheck className="w-4 h-4 text-purple-400 flex-shrink-0" />
-                <div>
-                  <div className="text-xs font-bold text-slate-100">Admin</div>
-                  <div className="text-[10px] text-slate-400 font-mono">admin@internal</div>
-                </div>
-              </button>
-            </div>
-
-            {/* Interns Roster */}
-            <div className="space-y-1.5 pt-1">
-              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
-                Intern Accounts:
-              </span>
-              <div className="grid grid-cols-2 gap-2">
+          {/* Quick Demo Fill Helpers (Programmatic, zero exposed passwords or profiles) */}
+          <div className="pt-3 border-t border-white/[0.08] flex items-center justify-between text-xs text-slate-400">
+            {portal === 'assigner' ? (
+              <>
+                <span>Testing credentials?</span>
                 <button
                   type="button"
-                  onClick={() => quickLogin('intern@internal.company')}
-                  className="flex items-center space-x-2 p-2 bg-slate-800/60 hover:bg-slate-800 border border-slate-800 rounded-lg text-left transition-all"
+                  onClick={handlePrefillAssignerDemo}
+                  className="text-cyan-400 hover:text-cyan-300 font-semibold transition-colors"
                 >
-                  <GraduationCap className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-                  <div className="truncate">
-                    <div className="text-xs font-medium text-slate-200 truncate">Aarav Sharma</div>
-                    <div className="text-[9px] text-slate-500 font-mono truncate">intern@internal</div>
-                  </div>
+                  Fill Assigner Demo
                 </button>
-
+              </>
+            ) : portal === 'intern' ? (
+              <>
                 <button
                   type="button"
-                  onClick={() => quickLogin('ananya@internal.company')}
-                  className="flex items-center space-x-2 p-2 bg-slate-800/60 hover:bg-slate-800 border border-slate-800 rounded-lg text-left transition-all"
+                  onClick={() => switchPortal('register')}
+                  className="text-slate-400 hover:text-slate-200 transition-colors"
                 >
-                  <GraduationCap className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
-                  <div className="truncate">
-                    <div className="text-xs font-medium text-slate-200 truncate">Ananya Sen</div>
-                    <div className="text-[9px] text-slate-500 font-mono truncate">ananya@internal</div>
-                  </div>
+                  Need an account? <span className="text-emerald-400 font-semibold">Register here</span>
                 </button>
-
                 <button
                   type="button"
-                  onClick={() => quickLogin('priyanshu@internal.company')}
-                  className="flex items-center space-x-2 p-2 bg-slate-800/60 hover:bg-slate-800 border border-slate-800 rounded-lg text-left transition-all"
+                  onClick={handlePrefillInternDemo}
+                  className="text-cyan-400 hover:text-cyan-300 font-semibold transition-colors"
                 >
-                  <GraduationCap className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
-                  <div className="truncate">
-                    <div className="text-xs font-medium text-slate-200 truncate">Priyanshu Patel</div>
-                    <div className="text-[9px] text-slate-500 font-mono truncate">priyanshu@internal</div>
-                  </div>
+                  Fill Demo Intern
                 </button>
-
+              </>
+            ) : (
+              <div className="w-full text-center">
                 <button
                   type="button"
-                  onClick={() => quickLogin('rohan@internal.company')}
-                  className="flex items-center space-x-2 p-2 bg-slate-800/60 hover:bg-slate-800 border border-slate-800 rounded-lg text-left transition-all"
+                  onClick={() => switchPortal('intern')}
+                  className="text-slate-400 hover:text-slate-200 transition-colors"
                 >
-                  <GraduationCap className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
-                  <div className="truncate">
-                    <div className="text-xs font-medium text-slate-200 truncate">Rohan Verma</div>
-                    <div className="text-[9px] text-slate-500 font-mono truncate">rohan@internal</div>
-                  </div>
+                  Already registered? <span className="text-cyan-400 font-semibold">Back to Intern Login</span>
                 </button>
               </div>
-            </div>
-
-            <div className="text-[11px] text-slate-500 text-center font-mono pt-1">
-              Default password for all accounts: <span className="text-cyan-400 font-bold">SecretPass123!</span>
-            </div>
+            )}
           </div>
         </div>
       </div>

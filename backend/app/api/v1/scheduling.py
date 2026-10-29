@@ -1,3 +1,4 @@
+import os
 """
 Meeting Scheduling and Calendar Endpoints.
 """
@@ -30,7 +31,7 @@ async def schedule_meeting(
     current_user: User = Depends(require_roles([UserRole.ASSIGNER, UserRole.ADMIN]))
 ):
     # Verify task exists
-    res = await db.execute(select(Task).where(Task.id == request.task_id).options(selectinload(Task.intern), selectinload(Task.versions)))
+    res = await db.execute(select(Task).where(Task.id == request.task_id).options(selectinload(Task.intern), selectinload(Task.versions), selectinload(Task.documents)))
     task = res.scalars().first()
     if not task:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
@@ -77,6 +78,45 @@ async def schedule_meeting(
 
     if request.meeting_type == MeetingType.BRIEFING:
         task.status = TaskStatus.BRIEFING_SCHEDULED
+
+    # Dispatch assignment email to intern if assigned
+    if request.meeting_type == MeetingType.BRIEFING and task.intern and task.intern.email:
+        current_version = task.versions[-1] if task.versions else None
+        deadline_str = "within 7 days"
+        if current_version and current_version.deadline_utc:
+            deadline_str = SchedulingService.format_to_local(
+                current_version.deadline_utc,
+                current_version.display_timezone or request.timezone
+            )
+        else:
+            deadline_str = SchedulingService.format_to_local(
+                start_utc + timedelta(days=7),
+                request.timezone
+            )
+
+        doc = task.documents[0] if (task.documents and len(task.documents) > 0) else None
+        doc_filename = doc.filename if doc else "Task_Specification.pdf"
+        doc_path = doc.file_path if (doc and doc.file_path and os.path.isfile(doc.file_path)) else None
+        task_obj = current_version.objective if current_version else None
+
+        try:
+            from backend.app.services.email_service import EmailService
+            await EmailService.send_task_assignment_email(
+                db=db,
+                task_id=task.id,
+                to_email=task.intern.email,
+                intern_name=task.intern.full_name or "Intern",
+                task_title=task.title,
+                deadline_str=deadline_str,
+                meeting_url=meet_url,
+                doc_filename=doc_filename,
+                doc_path=doc_path,
+                task_objective=task_obj,
+                assigner_name=current_user.full_name or "Task Assigner (HR)"
+            )
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"[SCHEDULING] Failed to dispatch assignment email: {e}")
 
     await db.commit()
     await db.refresh(meeting)

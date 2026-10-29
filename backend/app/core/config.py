@@ -44,6 +44,7 @@ class Settings(BaseSettings):
 
     # Google Integrations
     GOOGLE_DRY_RUN: bool = True
+    DEFAULT_GOOGLE_MEET_URL: str = "https://meet.google.com/meet/rqp-ctfg-nri"
     GOOGLE_CLIENT_ID: Optional[str] = None
     GOOGLE_CLIENT_SECRET: Optional[str] = None
     GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/v1/auth/google/callback"
@@ -56,16 +57,28 @@ class Settings(BaseSettings):
     MEETING_BAAS_WEBHOOK_URL: Optional[str] = None
 
     # Cartesia Neural TTS Voice
-    CARTESIA_API_KEY: Optional[str] = "sk_car_KEA1mG2f5pGHkUDEFRBpjF"
-    CARTESIA_VOICE_ID: str = "147f7727-7aa2-494c-993b-6178c79c7b6d"
+    CARTESIA_API_KEY: Optional[str] = None
+    CARTESIA_VOICE_ID: str = "f6141af3-5f94-418c-80ed-a45d450e7e2e"
     CARTESIA_MODEL_ID: str = "sonic-3.6"
-    CARTESIA_VOICE_NAME: str = "Subha (Indian English)"
+    CARTESIA_VOICE_NAME: str = "Subha HR (Indian English)"
 
     # Review Engine Policies
     MAX_REVISION_ROUNDS: int = 3
     ENABLE_AUTONOMOUS_PASS: bool = True
     AUTO_RECORDING_CONSENT_REQUIRED: bool = True
     SANDBOX_EXECUTION_TIMEOUT_SECONDS: int = 10
+
+    # SMTP Email Notification Settings
+    SMTP_ENABLED: bool = True
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    SMTP_FROM_EMAIL: str = "notifications@taskreviewer.internal"
+    SMTP_FROM_NAME: str = "Task Reviewer AI (HR Notifications)"
+    SMTP_USE_TLS: bool = True
+    SMTP_USE_SSL: bool = False
+    SMTP_TIMEOUT_SECONDS: int = 15
 
     # CORS
     CORS_ORIGINS: List[str] = [

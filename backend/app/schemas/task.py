@@ -68,6 +68,7 @@ class TaskDocumentResponse(BaseModel):
     mime_type: str
     file_hash_sha256: str
     created_at: datetime
+    analysis_json: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -114,10 +115,14 @@ class TaskResponse(BaseModel):
 class TaskUpdateRequest(BaseModel):
     title: Optional[str] = None
     intern_id: Optional[str] = None
+    deadline_iso: Optional[str] = None
+    display_timezone: Optional[str] = "Asia/Kolkata"
 
 class TaskCreateRequest(BaseModel):
     title: str = Field(..., min_length=3, max_length=255)
     intern_id: Optional[str] = None
+    deadline_iso: Optional[str] = None
+    display_timezone: Optional[str] = "Asia/Kolkata"
 
 class ApproveSpecificationRequest(BaseModel):
     deadline_iso: Optional[str] = None # Optionally adjust deadline

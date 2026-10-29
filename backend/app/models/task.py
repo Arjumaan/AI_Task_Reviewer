@@ -18,6 +18,8 @@ class TaskStatus(str, enum.Enum):
     PASSED = "PASSED"
     HUMAN_REVIEW_REQUIRED = "HUMAN_REVIEW_REQUIRED"
     CLOSED = "CLOSED"
+    SUBMITTED = "SUBMITTED"
+    REVIEW_SCHEDULED = "REVIEW_SCHEDULED"
     ESCALATED = "ESCALATED"
 
 class RequirementPriority(str, enum.Enum):
@@ -83,6 +85,7 @@ class TaskDocument(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     file_hash_sha256 = Column(String(64), nullable=False)
     extracted_raw_text = Column(Text, nullable=False)
     extraction_warnings = Column(Text, nullable=True)
+    analysis_json = Column(Text, nullable=True)
 
     task = relationship("Task", back_populates="documents")
 

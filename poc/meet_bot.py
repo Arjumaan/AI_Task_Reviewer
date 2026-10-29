@@ -23,12 +23,11 @@ import soundfile as sf
 
 CHROME_PATH = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 OLLAMA_API_URL = "http://127.0.0.1:11434/api/generate"
-BOT_DISPLAY_NAME = "Task Reviewer AI (Assistant)"
+BOT_DISPLAY_NAME = "Subha HR"
 
 DISCLOSURE_SPEECH = (
-    "Hello everyone. I am the Task Reviewer AI assistant. "
-    "This session is being recorded and transcribed for task briefing and review evaluation. "
-    "Please confirm your consent, and we may begin."
+    "Hi, I'm Subha. The task has been assigned to you. "
+    "Now I will explain the task in brief. Listen and ask me if you have any questions."
 )
 
 def check_is_google_authenticated_sqlite() -> bool:
@@ -121,6 +120,14 @@ class GoogleMeetBot:
         self.transcripts = []
         self.tts_engine = pyttsx3.init()
         self.tts_engine.setProperty('rate', 165)
+        # Configure female voice
+        try:
+            voices = self.tts_engine.getProperty('voices')
+            female_voice = next((v for v in voices if 'female' in v.name.lower() or 'zira' in v.name.lower() or 'hazel' in v.name.lower()), voices[0] if voices else None)
+            if female_voice:
+                self.tts_engine.setProperty('voice', female_voice.id)
+        except Exception:
+            pass
         
     def speak_audio(self, text: str, output_device_name: str = "Virtual Audio Cable"):
         """Synthesizes text and plays it into the Virtual Audio Cable output (or default)."""

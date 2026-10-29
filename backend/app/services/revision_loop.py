@@ -1,3 +1,4 @@
+from backend.app.services.email_service import EmailService
 """
 Revision Loop and Task Lifecycle State Machine.
 Enforces max review round policies, schedules subsequent reviews,
@@ -41,6 +42,17 @@ class RevisionLoopService:
         if outcome == EvaluationOutcome.PASS:
             task.status = TaskStatus.PASSED
             logger.info(f"[LIFECYCLE] Task {task.id} PASSED on round {current_round.round_number}")
+            if task.intern:
+                await EmailService.send_task_passed_email(
+                    db=db,
+                    task_id=task.id,
+                    to_email=task.intern.email,
+                    intern_name=task.intern.full_name,
+                    task_title=task.title,
+                    feedback=summary,
+                    score=score,
+                    assigner_name="Subha HR"
+                )
             await db.commit()
             return task.status
 
@@ -95,6 +107,20 @@ class RevisionLoopService:
             status=RoundStatus.PENDING
         )
         db.add(new_round)
+
+        if task.intern:
+            next_review_formatted = SchedulingService.format_to_local(next_review_time, settings.DEFAULT_TIMEZONE)
+            await EmailService.send_task_revision_email(
+                db=db,
+                task_id=task.id,
+                to_email=task.intern.email,
+                intern_name=task.intern.full_name,
+                task_title=task.title,
+                gaps=[summary],
+                next_review_time_str=next_review_formatted,
+                next_review_meet_url=meet_url,
+                assigner_name="Subha HR"
+            )
 
         await db.commit()
         logger.info(f"[LIFECYCLE] Task {task.id} revision round {next_round_number} scheduled at {meet_url}")

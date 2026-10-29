@@ -51,7 +51,7 @@ async def submit_deliverables(
     )
     db.add(review_round)
 
-    task.status = TaskStatus.UNDER_REVIEW
+    task.status = TaskStatus.SUBMITTED
     await db.commit()
 
     res = await db.execute(
@@ -87,6 +87,20 @@ async def list_task_submissions(
     res = await db.execute(
         select(Submission)
         .where(Submission.task_id == task_id)
+        .options(selectinload(Submission.review_rounds))
+    )
+    return res.scalars().all()
+
+
+@router.get("/my", response_model=List[SubmissionResponse])
+async def list_my_submissions(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Returns all submissions authored by the currently logged-in intern."""
+    res = await db.execute(
+        select(Submission)
+        .where(Submission.intern_id == current_user.id)
         .options(selectinload(Submission.review_rounds))
     )
     return res.scalars().all()
