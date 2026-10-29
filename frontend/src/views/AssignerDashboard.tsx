@@ -754,8 +754,13 @@ export const AssignerDashboard: React.FC<AssignerDashboardProps> = ({ initialTas
                   </div>
                 </div>
                 <div className="flex items-center justify-between mt-3">
-                  <div className="text-xs text-slate-400">
+                  <div className="text-xs text-slate-400 flex items-center gap-1.5">
                     Intern: <strong className="text-slate-300">{task.intern_id ? interns.find((i) => i.id === task.intern_id)?.full_name || 'Assigned' : 'Unassigned'}</strong>
+                    {task.submissions && task.submissions.length > 0 && (
+                      <span className="text-[10px] bg-purple-950/80 text-purple-300 border border-purple-800/80 px-1.5 py-0.5 rounded-md font-bold">
+                        📦 Submitted
+                      </span>
+                    )}
                   </div>
                   {getStatusBadge(task.status)}
                 </div>
@@ -856,6 +861,81 @@ export const AssignerDashboard: React.FC<AssignerDashboardProps> = ({ initialTas
                 </div>
                 <div>{getStatusBadge(selectedTask.status)}</div>
               </div>
+
+              {/* INTERN SUBMISSION REVIEW & GATE BANNER */}
+              {selectedTask.submissions && selectedTask.submissions.length > 0 ? (
+                <div className="p-4 bg-gradient-to-r from-purple-950/70 via-indigo-950/40 to-slate-900 border border-purple-500/50 rounded-2xl space-y-3 shadow-lg shadow-purple-950/30">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-purple-800/40">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="text-xs font-bold text-purple-200 tracking-wide uppercase">
+                        🚀 Intern Deliverables Submitted (Round #{selectedTask.submissions.length})
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-slate-400 font-mono">
+                      Submitted {new Date(selectedTask.submissions[selectedTask.submissions.length - 1].created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                    <div className="bg-slate-950/80 border border-slate-800/80 p-3 rounded-xl space-y-1">
+                      <span className="text-slate-400 font-medium">Git Repository:</span>
+                      <div className="flex items-center gap-2">
+                        <a
+                          href={selectedTask.submissions[selectedTask.submissions.length - 1].repository_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-cyan-400 hover:text-cyan-300 font-mono underline break-all flex items-center gap-1 font-semibold"
+                        >
+                          <span>{selectedTask.submissions[selectedTask.submissions.length - 1].repository_url}</span>
+                          <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                        </a>
+                      </div>
+                      {selectedTask.submissions[selectedTask.submissions.length - 1].commit_hash && (
+                        <div className="text-[11px] text-slate-500 font-mono">
+                          Commit: <span className="text-slate-300">{selectedTask.submissions[selectedTask.submissions.length - 1].commit_hash}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="bg-slate-950/80 border border-slate-800/80 p-3 rounded-xl space-y-1">
+                      <span className="text-slate-400 font-medium">Intern Implementation Notes:</span>
+                      <p className="text-slate-300 italic text-[11px] leading-relaxed line-clamp-3">
+                        {selectedTask.submissions[selectedTask.submissions.length - 1].notes || 'No extra notes provided.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                    <span className="text-xs text-purple-300/90 font-medium">
+                      {selectedTask.status === 'PASSED'
+                        ? '✅ This task has been reviewed and approved.'
+                        : 'Review the code above and the Google Meet session demo, then record the official outcome:'}
+                    </span>
+                    {selectedTask.status !== 'PASSED' && (
+                      <button
+                        onClick={() => openReviewModal(selectedTask.id)}
+                        className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl text-xs shadow-md shadow-emerald-950/50 flex items-center gap-1.5 transition-all active:scale-95 ml-auto"
+                      >
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        <span>Review & Evaluate (Pass / Revise)</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3.5 bg-slate-950/60 border border-slate-800/80 rounded-xl flex items-center justify-between text-xs gap-3">
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <Clock className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                    <span>
+                      <strong className="text-slate-300">Pending Intern Deliverables:</strong> Intern has not submitted their code repository yet.
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-slate-500 font-medium bg-slate-900 border border-slate-800 px-2 py-0.5 rounded-md flex-shrink-0">
+                    Evaluation Gate: Awaiting Submission
+                  </span>
+                </div>
+              )}
 
               {/* Action Toolbar */}
               <div className="flex flex-wrap gap-2.5">
@@ -1876,6 +1956,36 @@ export const AssignerDashboard: React.FC<AssignerDashboardProps> = ({ initialTas
             )}
 
             <form onSubmit={handleSubmitReviewOutcome} className="space-y-4">
+              {/* Submission Context Preview */}
+              {selectedTask?.submissions && selectedTask.submissions.length > 0 ? (
+                <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl text-xs space-y-1.5">
+                  <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                    📦 Deliverables Under Review (Round #{selectedTask.submissions.length}):
+                  </span>
+                  <div className="flex items-center gap-2 font-mono text-cyan-300">
+                    <span>Repo:</span>
+                    <a
+                      href={selectedTask.submissions[selectedTask.submissions.length - 1].repository_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline break-all"
+                    >
+                      {selectedTask.submissions[selectedTask.submissions.length - 1].repository_url}
+                    </a>
+                  </div>
+                  {selectedTask.submissions[selectedTask.submissions.length - 1].notes && (
+                    <div className="text-slate-400 text-[11px] italic">
+                      Notes: "{selectedTask.submissions[selectedTask.submissions.length - 1].notes}"
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="p-3 bg-amber-950/40 border border-amber-800/60 rounded-xl text-xs text-amber-300 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                  <span>Note: Intern has not delivered code repository yet. You can evaluate the live voice presentation or request code submission.</span>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
                   Evaluation Outcome

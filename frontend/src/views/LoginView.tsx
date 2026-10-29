@@ -75,6 +75,11 @@ export const LoginView: React.FC = () => {
     setPassword('SecretPass123!');
   };
 
+  const handlePrefillArjumaan = () => {
+    setEmail('arjumaan21@gmail.com');
+    setPassword('SecretPass123!');
+  };
+
   return (
     <div className="min-h-screen flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden bg-slate-950">
       {/* Background ambient lighting */}
@@ -271,22 +276,36 @@ export const LoginView: React.FC = () => {
                 </button>
               </>
             ) : portal === 'intern' ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => switchPortal('register')}
-                  className="text-slate-400 hover:text-slate-200 transition-colors"
-                >
-                  Need an account? <span className="text-emerald-400 font-semibold">Register here</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handlePrefillInternDemo}
-                  className="text-cyan-400 hover:text-cyan-300 font-semibold transition-colors"
-                >
-                  Fill Demo Intern
-                </button>
-              </>
+              <div className="w-full space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-slate-400 font-medium">Quick One-Click Intern Sign In:</span>
+                  <button
+                    type="button"
+                    onClick={() => switchPortal('register')}
+                    className="text-slate-400 hover:text-slate-200 transition-colors text-[11px]"
+                  >
+                    Need an account? <span className="text-emerald-400 font-semibold">Register here</span>
+                  </button>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handlePrefillArjumaan}
+                    className="px-2.5 py-1.5 bg-cyan-950/70 hover:bg-cyan-900/80 border border-cyan-700/70 rounded-lg text-cyan-300 font-semibold text-xs transition-colors flex items-center gap-1.5 shadow-sm"
+                  >
+                    <span>👤 Arjumaan M</span>
+                    <span className="text-[10px] font-mono text-cyan-400">(arjumaan21@gmail.com)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handlePrefillInternDemo}
+                    className="px-2.5 py-1.5 bg-indigo-950/70 hover:bg-indigo-900/80 border border-indigo-700/70 rounded-lg text-indigo-300 font-semibold text-xs transition-colors flex items-center gap-1.5 shadow-sm"
+                  >
+                    <span>🎓 Demo Intern</span>
+                    <span className="text-[10px] font-mono text-indigo-400">(intern@internal.company)</span>
+                  </button>
+                </div>
+              </div>
             ) : (
               <div className="w-full text-center">
                 <button

@@ -37,6 +37,7 @@ export const InternDashboard: React.FC<InternDashboardProps> = ({ initialTaskId 
   const [commitHash, setCommitHash] = useState('');
   const [submissionNotes, setSubmissionNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionSuccessMsg, setSubmissionSuccessMsg] = useState<string | null>(null);
 
   // Appeal Modal State
   const [showAppealModal, setShowAppealModal] = useState(false);
@@ -160,9 +161,11 @@ export const InternDashboard: React.FC<InternDashboardProps> = ({ initialTaskId 
       setRepoUrl('');
       setCommitHash('');
       setSubmissionNotes('');
+      setSubmissionSuccessMsg('Deliverables submitted successfully! Your submission is now visible in the Task Assigner workspace and pending HR review.');
       await loadData();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to submit deliverable', err);
+      alert('Error submitting deliverable: ' + (err?.response?.data?.detail || err.message));
     } finally {
       setIsSubmitting(false);
     }
@@ -667,6 +670,13 @@ export const InternDashboard: React.FC<InternDashboardProps> = ({ initialTaskId 
                 <p className="text-xs text-slate-400">
                   Provide your git repository URL and commit hash. The AI Reviewer will verify deterministic test assertions and schedule your evaluation review.
                 </p>
+
+                {submissionSuccessMsg && (
+                  <div className="p-3.5 bg-emerald-950/80 border border-emerald-500 rounded-xl text-xs text-emerald-200 font-medium flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                    <span>{submissionSuccessMsg}</span>
+                  </div>
+                )}
 
                 <form onSubmit={handleSubmitDeliverable} className="space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
